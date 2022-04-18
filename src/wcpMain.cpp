@@ -28,40 +28,19 @@ struct OsVersion
 
 OsVersion getOsVersion()
 {
-    utsname utsname = {};
-    uname(&utsname);
+	utsname utsname = {};
+	uname(&utsname);
 
-    OsVersion version;
-    version.osName = utsname.sysname;
+	char *ptr = utsname.release;
 
-    std::string acc;
-    for (int32_t i = 0; utsname.release[i] != '\0'; i++)
-    {
-        char c = utsname.release[i];
-        if (isdigit(c))
-        {
-            acc.push_back(utsname.release[i]);
-        }
-        else if (c == '.')
-        {
-            if (version.majorVersion == -1)
-            {
-                version.majorVersion = std::stoi(acc);
-            }
-            else
-            {
-                version.minorVersion = std::stoi(acc);
-                break;
-            }
-            acc.clear();
-        }
-        else
-        {
-            break;
-        }
-    }
+	OsVersion version;
+	version.osName = utsname.sysname;
 
-    return version;
+	version.majorVersion = atoi(ptr); //Assume version format follows Linux convention. Since wcp doesn't need to work on other OSes, a result of 0,0 doesn't matter
+	ptr = strchr(ptr, '.') + 1;
+	version.majorVersion = atoi(ptr);
+
+	return version;
 }
 
 int wcpMain(int argc, char** argv)
