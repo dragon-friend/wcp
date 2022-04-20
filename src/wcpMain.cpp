@@ -10,60 +10,55 @@
 #include "CopyQueue.hpp"
 #include "Config.hpp"
 #include "Util.hpp"
+#include <iostream>
+#include <filesystem>
+#include <cstring>
+
+using namespace std;
+
+int input_errors(int argc, char **argv)
+{
+	utsname sysinfo;
+	uname(&sysinfo);
+
+	if (strncmp("Linux", sysinfo.sysname, 5))
+	{
+		cerr << "How did you even compile this on" << sysinfo.sysname << "?" << endl;
+		return 1;
+	}
+
+	int major_version = stoi(sysinfo.release);
+
+	if (major_version < 5 || (major_version == 5 && stoi(strchr(sysinfo.release, '.') + 1) < 6))
+	{
+		cerr << "Sorry, wcp requires at least Linux 5.6" << endl;
+		return 1;
+	}
+
+	if(argc != 3)
+	{
+		cerr << "Usage: " << argv[0] << " SRC DEST" << endl <<
+				"Supports copying files and folders." << endl <<
+				"Contributions welcome to add better argument handling, and multiple sources!" << endl;
+		return 1;
+	}
+
+	return 0;
+}
 
 size_t getPhysicalRamSize()
 {
-    long pages = sysconf(_SC_PHYS_PAGES);
-    long pageSize = sysconf(_SC_PAGE_SIZE);
-    release_assert(pages != -1 && pageSize != -1);
-    return size_t(pages) * size_t(pageSize);
-}
-
-struct OsVersion
-{
-    std::string osName;
-    int32_t majorVersion = -1;
-    int32_t minorVersion = -1;
-};
-
-OsVersion getOsVersion()
-{
-	utsname utsname = {};
-	uname(&utsname);
-
-	char *ptr = utsname.release;
-
-	OsVersion version;
-	version.osName = utsname.sysname;
-
-	version.majorVersion = atoi(ptr); //Assume version format follows Linux convention. Since wcp doesn't need to work on other OSes, a result of 0,0 doesn't matter
-	ptr = strchr(ptr, '.') + 1;
-	version.majorVersion = atoi(ptr);
-
-	return version;
+	long pages = sysconf(_SC_PHYS_PAGES);
+	long pageSize = sysconf(_SC_PAGE_SIZE);
+	release_assert(pages != -1 && pageSize != -1);
+	return size_t(pages) * size_t(pageSize);
 }
 
 int wcpMain(int argc, char** argv)
 {
-    OsVersion osVersion = getOsVersion();
-    if (osVersion.osName != "Linux")
-    {
-        fprintf(stderr, "How did you even compile this on %s?\n", osVersion.osName.c_str());
-        return 1;
-    }
-    if (osVersion.majorVersion < 5 || (osVersion.majorVersion == 5 && osVersion.minorVersion < 6))
-    {
-        fputs("Sorry, wcp requires at least Linux 5.6\n", stderr);
-        return 1;
-    }
 
-    if(argc != 3)
-    {
-        fprintf(stderr, "Usage: %s SRC DEST\n", argv[0]);
-        fputs("Supports copying files and folders.\n", stderr);
-        fputs("Contributions welcome to add better argument handling, and multiple sources!\n", stderr);
-        return 1;
-    }
+	if(input_errors(argc, argv))
+		return 1;
 
     std::filesystem::path src = argv[1];
     std::filesystem::path dest = argv[2];
